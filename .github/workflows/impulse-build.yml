@@ -1,0 +1,141 @@
+name: IMPULSE Kernel Build
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      BUILD_TARGET:
+        description: "Build target"
+        default: xaga
+        type: choice
+        options:
+          - xaga
+          - generic
+
+      KSU:
+        description: "Enable KernelSU?"
+        default: true
+        type: boolean
+
+      SUSFS:
+        description: "Enable SUSFS?"
+        default: true
+        type: boolean
+
+      LXC:
+        description: "Apply LXC patch?"
+        default: true
+        type: boolean
+
+      STOCK_CONFIG:
+        description: "Apply stock config?"
+        default: false
+        type: boolean
+
+      TG_NOTIFY:
+        description: "Send Telegram notification?"
+        default: false
+        type: boolean
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  MAN_DISABLE: true
+  TERM: xterm-256color
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 480
+
+    env:
+      TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq \
+            bc bison ccache curl flex git tar wget aria2 jq zip zstd upx build-essential python3-requests libfaketime lz4 just
+
+      - name: Compute ccache key
+        run: |
+          echo "clang_hash=$(clang --version | sha256sum | cut -c1-10 || echo none)" >> "$GITHUB_ENV"
+
+      - name: Restore ccache
+        id: restore-ccache
+        uses: actions/cache/restore@v5.0.3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-
+
+      - name: Build IMPULSE Kernel
+        id: build
+        env:
+          BUILD_TARGET: ${{ inputs.BUILD_TARGET }}
+          KSU: ${{ inputs.KSU }}
+          SUSFS: ${{ inputs.SUSFS }}
+          LXC: ${{ inputs.LXC }}
+          STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
+          TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
+        run: |
+          just build
+
+          file="$GITHUB_WORKSPACE/github.json"
+          [[ -f "$file" ]] || { echo "::error::github.json missing"; exit 1; }
+          python3 - "$file" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1]) as f:
+              data = json.load(f)
+
+          keys = ["name", "variant", "out_dir", "package_name"]
+          with open(sys.argv[2], "a") as out:
+              for key in keys:
+                  out.write(f"{key}={data[key]}\n")
+          PY
+
+      - name: Save ccache
+        if: ${{ always() && steps.restore-ccache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5.0.3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ env.clang_hash }}-${{ inputs.BUILD_TARGET }}-${{ inputs.KSU }}-${{ inputs.SUSFS }}-${{ inputs.LXC }}-${{ github.sha }}
+
+      - name: Upload metadata artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: IMPULSE-metadata-${{ steps.build.outputs.variant }}
+          path: ${{ github.workspace }}/github.json
+          compression-level: 0
+
+      - name: Upload AnyKernel3 package
+        uses: actions/upload-artifact@v6
+        with:
+          name: IMPULSE-${{ steps.build.outputs.variant }}-AnyKernel3
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-AnyKernel3.zip
+          compression-level: 0
+
+      - name: Upload boot image
+        uses: actions/upload-artifact@v6
+        with:
+          name: IMPULSE-${{ steps.build.outputs.variant }}-boot
+          path: ${{ steps.build.outputs.out_dir }}/${{ steps.build.outputs.package_name }}-boot*.img
+
+      - name: Build completed
+        run: |
+          echo "✅ IMPULSE Kernel Build Completed!"
+          echo "📦 Variant: ${{ steps.build.outputs.variant }}"
