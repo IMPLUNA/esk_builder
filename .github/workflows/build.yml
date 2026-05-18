@@ -18,6 +18,14 @@ on:
       LXC:
         type: boolean
         required: true
+      BBG:
+        type: boolean
+        required: false
+        default: false
+      BBR_V3:
+        type: boolean
+        required: false
+        default: false
       STOCK_CONFIG:
         type: string
         required: true
@@ -51,6 +59,16 @@ on:
 
       LXC:
         description: "Apply LXC patch?"
+        default: false
+        type: boolean
+
+      BBG:
+        description: "Enable Baseband Guard?"
+        default: false
+        type: boolean
+
+      BBR_V3:
+        description: "Enable BBR v3 network optimization?"
         default: false
         type: boolean
 
@@ -127,6 +145,8 @@ jobs:
           KSU: ${{ inputs.KSU }}
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
+          BBG: ${{ inputs.BBG }}
+          BBR_V3: ${{ inputs.BBR_V3 }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}
           TG_NOTIFY: ${{ inputs.TG_NOTIFY }}
         run: |
