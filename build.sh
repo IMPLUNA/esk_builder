@@ -60,6 +60,11 @@ validate_env() {
             if is_true "$LXC" && [[ $BUILD_TARGET != "xaga" ]]; then
                 error "LXC is not supported for $BUILD_TARGET target"
             fi
+
+            # BBG works best with KernelSU for module management
+            if is_true "$BBG" && ! is_true "$KSU"; then
+                warn "BBG works best with KernelSU enabled for module management"
+            fi
             ;;
         *)
             fatal "Unknown environment validation stage: $stage"

@@ -73,7 +73,7 @@ send_start_msg() {
 $(tg_run_line)
 *Target:* $(escape_md_v2 "$BUILD_TARGET")
 *Defconfig:* $(escape_md_v2 "$KERNEL_DEFCONFIG")
-*Features:* KSU $(parse_bool "$KSU"), SuSFS $(parse_bool "$SUSFS"), LXC $(parse_bool "$LXC"), Stock config $(parse_bool "$STOCK_CONFIG")
+*Features:* KSU $(parse_bool "$KSU"), SuSFS $(parse_bool "$SUSFS"), LXC $(parse_bool "$LXC"), BBG $(parse_bool "$BBG"), BBRv3 $(parse_bool "$BBR_V3"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF
     )
     telegram_send_msg "$start_msg"

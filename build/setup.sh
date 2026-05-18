@@ -78,6 +78,8 @@ init_build() {
     KSU="$(resolve_bool "${KSU-}" "$KSU_DEFAULT")"
     SUSFS="$(resolve_bool "${SUSFS-}" "$SUSFS_DEFAULT")"
     LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
+    BBG="$(resolve_bool "${BBG-}" "$BBG_DEFAULT")"
+    BBR_V3="$(resolve_bool "${BBR_V3-}" "$BBR_V3_DEFAULT")"
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
@@ -198,6 +200,89 @@ apply_susfs() {
     success "SuSFS applied!"
 }
 
+apply_bbg() {
+    info "Apply Baseband Guard (BBG) patches"
+
+    local bbg_dir="$BBG_DIR"
+    local security_dir="$KERNEL/security"
+    local include_dir="$KERNEL/include"
+
+    # Clone BBG repository
+    git_clone "$BBG_REPO" "$bbg_dir"
+
+    # Create symlink in security directory
+    local bbg_symlink="$security_dir/baseband-guard"
+    if [[ -L "$bbg_symlink" ]]; then
+        rm -f "$bbg_symlink"
+    fi
+    ln -sfn "$(realpath --relative-to="$security_dir" "$bbg_dir")" "$bbg_symlink"
+    info "BBG symlink created"
+
+    # Update security/Makefile
+    local security_makefile="$security_dir/Makefile"
+    if ! grep -q 'baseband-guard/baseband_guard.o' "$security_makefile"; then
+        printf '\nobj-$(CONFIG_BBG) += baseband-guard/\n' >> "$security_makefile"
+        info "Security Makefile updated"
+    fi
+
+    # Update security/Kconfig
+    local security_kconfig="$security_dir/Kconfig"
+    if ! grep -q 'security/baseband-guard/Kconfig' "$security_kconfig"; then
+        if grep -n '^endmenu[[:space:]]*$' "$security_kconfig" >/dev/null 2>&1; then
+            awk '
+              { a[NR]=$0 } END {
+                last=0; for(i=1;i<=NR;i++) if(a[i] ~ /^endmenu[[:space:]]*$/) last=i;
+                for(i=1;i<=NR;i++){
+                  if(i==last) print "source \"security/baseband-guard/Kconfig\"";
+                  print a[i];
+                }
+              }' "$security_kconfig" > "$security_kconfig.tmp" && mv "$security_kconfig.tmp" "$security_kconfig"
+        else
+            printf '\nsource "security/baseband-guard/Kconfig"\n' >> "$security_kconfig"
+        fi
+        info "Security Kconfig updated"
+    fi
+
+    # Enable BBG in kernel config
+    config --enable CONFIG_BBG
+
+    # Update CONFIG_LSM to include baseband_guard
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    if [[ -f "$defconfig_file" ]]; then
+        if grep -q 'CONFIG_LSM=' "$defconfig_file"; then
+            sed -i 's/CONFIG_LSM=\(.*\)/CONFIG_LSM=\1,baseband_guard/' "$defconfig_file"
+        else
+            echo 'CONFIG_LSM=selinux,baseband_guard' >> "$defconfig_file"
+        fi
+        info "CONFIG_LSM updated for BBG"
+    fi
+
+    success "Baseband Guard applied!"
+}
+
+apply_bbr_v3() {
+    info "Apply BBR v3 network optimization"
+
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    if [[ -f "$defconfig_file" ]]; then
+        # Remove stale entries if present
+        sed -i '/CONFIG_DEFAULT_TCP_CONG/d' "$defconfig_file"
+        sed -i '/CONFIG_TCP_CONG_BBR3/d' "$defconfig_file"
+        sed -i '/CONFIG_TCP_CONG_BBR/d' "$defconfig_file"
+        sed -i '/CONFIG_NET_SCH_FQ/d' "$defconfig_file"
+
+        cat >> "$defconfig_file" << EOF
+CONFIG_TCP_CONG_BBR=y
+CONFIG_TCP_CONG_BBR3=y
+CONFIG_NET_SCH_FQ=y
+CONFIG_DEFAULT_TCP_CONG="bbr"
+EOF
+        info "BBR v3 configuration added to defconfig"
+    fi
+
+    success "BBR v3 network optimization applied!"
+}
+
 prepare_build() {
     step "Prepare build"
 
@@ -240,6 +325,18 @@ prepare_build() {
     if is_true "$STOCK_CONFIG"; then
         info "Apply stock config patch"
         patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/stock_config.patch"
+    fi
+
+    # Baseband Guard (BBG)
+    if is_true "$BBG"; then
+        apply_bbg
+    else
+        config --disable CONFIG_BBG
+    fi
+
+    # BBR v3 Network Optimization
+    if is_true "$BBR_V3"; then
+        apply_bbr_v3
     fi
 
     # Config Clang LTO

@@ -35,6 +35,8 @@ CLANG_LTO="thin"
 KSU_DEFAULT="false"
 SUSFS_DEFAULT="false"
 LXC_DEFAULT="false"
+BBG_DEFAULT="false"
+BBR_V3_DEFAULT="false"
 TG_NOTIFY_DEFAULT="false"
 RESET_SOURCES_DEFAULT="false"
 
@@ -55,6 +57,9 @@ SUSFS_REPO="gitlab.com:simonpunk/susfs4ksu@gki-android12-5.10"
 # Other sources
 GKI_URL="https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2025-09_r1.zip"
 LIBFAKESTAT_RELEASE_API="https://api.github.com/repos/cctv18/libfakestat/releases/latest"
+
+# Baseband Guard repository
+BBG_REPO="github.com:vc-teahouse/Baseband-guard@main"
 
 case "$BUILD_TARGET" in
     xaga)
@@ -87,6 +92,7 @@ CLANG="$WORKSPACE/clang"
 KERNEL_PATCHES="$WORKSPACE/kernel_patches"
 SUSFS_DIR="$WORKSPACE/susfs"
 LIBFAKESTAT_DIR="$WORKSPACE/libfakestat"
+BBG_DIR="$WORKSPACE/Baseband-guard"
 
 # Output stuff
 KERNEL_OUT="$WORKSPACE/work"

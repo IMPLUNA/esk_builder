@@ -53,5 +53,26 @@ xaga *args:
 generic *args:
     env BUILD_TARGET=generic {{args}} ./build.sh
 
+# Build with Baseband Guard enabled
+xaga-bbg *args:
+    env BUILD_TARGET=xaga BBG=true {{args}} ./build.sh
+
+generic-bbg *args:
+    env BUILD_TARGET=generic BBG=true {{args}} ./build.sh
+
+# Build with BBR v3 network optimization
+xaga-bbr *args:
+    env BUILD_TARGET=xaga BBR_V3=true {{args}} ./build.sh
+
+generic-bbr *args:
+    env BUILD_TARGET=generic BBR_V3=true {{args}} ./build.sh
+
+# Build with all security features (KSU + SUSFS + BBG + BBR v3)
+xaga-full *args:
+    env BUILD_TARGET=xaga KSU=true SUSFS=true BBG=true BBR_V3=true {{args}} ./build.sh
+
+generic-full *args:
+    env BUILD_TARGET=generic KSU=true SUSFS=true BBG=true BBR_V3=true {{args}} ./build.sh
+
 clean:
     rm -rf out work staged boot_image build.log github.json

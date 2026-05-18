@@ -123,6 +123,42 @@ example:
 just xaga KSU=true SUSFS=true LXC=false
 ```
 
+## security features
+
+### Baseband Guard (BBG)
+
+A lightweight LSM module that protects baseband and critical partitions from unauthorized writes.
+
+```bash
+# Build with BBG enabled
+just xaga-bbg KSU=true SUSFS=true
+
+# Or manually
+just xaga BBG=true KSU=true SUSFS=true
+```
+
+### BBR v3 Network Optimization
+
+Google's advanced congestion control algorithm for improved network performance.
+
+```bash
+# Build with BBR v3 enabled
+just xaga-bbr KSU=true SUSFS=true
+
+# Or manually
+just xaga BBR_V3=true KSU=true SUSFS=true
+```
+
+### Full Security Build
+
+Build with all security features enabled:
+
+```bash
+just xaga-full
+# or
+just generic-full
+```
+
 ## checks
 
 format shell scripts:
@@ -157,6 +193,8 @@ just clean
 | KSU             | enable KernelSU setup and config             | boolean                          | `false`                           |
 | SUSFS           | apply SuSFS patches and config               | boolean                          | `false`                           |
 | LXC             | apply the LXC patch                          | boolean                          | `false`                           |
+| BBG             | enable Baseband Guard (LSM baseband protection) | boolean                       | `false`                           |
+| BBR_V3          | enable BBR v3 network congestion control     | boolean                          | `false`                           |
 | STOCK_CONFIG    | apply the stock config patch                 | `auto`, `true`, `false`          | `xaga: false`, `generic: true`    |
 | BRANCH_OVERRIDE | override the target kernel branch            | branch name                      | `xaga: 16.2-rebase`, `generic: main` |
 | JOBS            | set the make job count                       | integer                          | `nproc --all`                     |
@@ -172,6 +210,8 @@ notes:
 - `STOCK_CONFIG=auto` resolves to `false` for xaga and `true` for generic
 - `SUSFS` needs `KSU=true`
 - `LXC` only works with `BUILD_TARGET=xaga`
+- `BBG` works best with `KSU=true` for KernelSU module management
+- `BBR_V3` enables BBR v3 as the default TCP congestion control algorithm
 - `TG_NOTIFY=true` needs `TG_BOT_TOKEN` and `TG_CHAT_ID`
 - `GH_TOKEN` is optional, but helps when fetching latest release assets
 

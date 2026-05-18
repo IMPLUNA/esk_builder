@@ -9,6 +9,8 @@ prepare_package_name() {
     VARIANT="$(is_true "$KSU" && echo "KSU" || echo "VNL")"
     is_true "$SUSFS" && VARIANT+="-SUSFS"
     is_true "$LXC" && VARIANT+="-LXC"
+    is_true "$BBG" && VARIANT+="-BBG"
+    is_true "$BBR_V3" && VARIANT+="-BBRv3"
     PACKAGE_NAME="$KERNEL_NAME-$KERNEL_VERSION-$VARIANT"
 }
 
@@ -122,7 +124,7 @@ $(tg_run_line)
 *Time:* $(escape_md_v2 "${minutes}m ${seconds}s")
 *Kernel:* $(escape_md_v2 "$KERNEL_VERSION")
 *Compiler:* $(escape_md_v2 "$COMPILER_STRING")
-*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), Stock config $(parse_bool "$STOCK_CONFIG")
+*Features:* KSU $(parse_bool "$KSU"), SuSFS $(is_true "$SUSFS" && escape_md_v2 "$SUSFS_VERSION" || echo "Disabled"), LXC $(parse_bool "$LXC"), BBG $(parse_bool "$BBG"), BBRv3 $(parse_bool "$BBR_V3"), Stock config $(parse_bool "$STOCK_CONFIG")
 EOF
     )
 
