@@ -303,10 +303,10 @@ prepare_build() {
     fi
 
     if is_true "$KSU"; then
-        info "Setup KernelSU"
+        info "Setup ReSukiSU"
         install_ksu "ESK-Project/ReSukiSU" "main"
         config --enable CONFIG_KSU
-        success "KernelSU added"
+        success "ReSukiSU added"
     fi
 
     # SuSFS

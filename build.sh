@@ -54,16 +54,16 @@ validate_env() {
         config)
             # before build prep
             if is_true "$SUSFS" && ! is_true "$KSU"; then
-                error "Cannot use SUSFS without KernelSU"
+                error "Cannot use SUSFS without ReSukiSU"
             fi
 
             if is_true "$LXC" && [[ $BUILD_TARGET != "xaga" ]]; then
                 error "LXC is not supported for $BUILD_TARGET target"
             fi
 
-            # BBG works best with KernelSU for module management
+            # BBG works best with ReSukiSU for module management
             if is_true "$BBG" && ! is_true "$KSU"; then
-                warn "BBG works best with KernelSU enabled for module management"
+                warn "BBG works best with ReSukiSU enabled for module management"
             fi
             ;;
         *)

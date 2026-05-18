@@ -117,11 +117,11 @@ git_clone() {
         "$url" -b "${branch}" "${dest}"
 }
 
-# Setup KernelSU
+# Setup ReSukiSU
 install_ksu() {
     local repo="$1"
     local ref="$2"
-    info "Install KernelSU: $repo@$ref"
+    info "Install ReSukiSU: $repo@$ref"
     curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/kernel/setup.sh" | bash -s "$ref"
 }
 
