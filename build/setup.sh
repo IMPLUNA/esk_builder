@@ -246,16 +246,8 @@ apply_bbg() {
     # Enable BBG in kernel config
     config --enable CONFIG_BBG
 
-    # Update CONFIG_LSM to include baseband_guard
-    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
-    if [[ -f "$defconfig_file" ]]; then
-        if grep -q 'CONFIG_LSM=' "$defconfig_file"; then
-            sed -i 's/CONFIG_LSM=\(.*\)/CONFIG_LSM=\1,baseband_guard/' "$defconfig_file"
-        else
-            echo 'CONFIG_LSM=selinux,baseband_guard' >> "$defconfig_file"
-        fi
-        info "CONFIG_LSM updated for BBG"
-    fi
+    # NOTE: CONFIG_LSM is updated in build_kernel() after defconfig merge,
+    # because xaga's merge_config.sh would overwrite it here.
 
     success "Baseband Guard applied!"
 }

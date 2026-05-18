@@ -18,6 +18,17 @@ build_kernel() {
         KCONFIG_CONFIG="$configs/gki_defconfig" scripts/kconfig/merge_config.sh -m -r "$configs/gki_defconfig" "$configs/vendor/xiaomi_mt6895.config" "$configs/vendor/xaga.config"
     fi
 
+    # BBG: add baseband_guard to CONFIG_LSM after defconfig merge
+    if is_true "$BBG"; then
+        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+        if grep -q 'CONFIG_LSM=' "$defconfig_file"; then
+            sed -i 's/CONFIG_LSM=\(.*\)/CONFIG_LSM=\1,baseband_guard/' "$defconfig_file"
+        else
+            echo 'CONFIG_LSM=selinux,baseband_guard' >> "$defconfig_file"
+        fi
+        info "CONFIG_LSM updated for BBG"
+    fi
+
     info "Generate defconfig: $KERNEL_DEFCONFIG"
     make "${MAKE_ARGS[@]}" "$KERNEL_DEFCONFIG"
 
