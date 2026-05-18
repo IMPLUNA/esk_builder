@@ -228,7 +228,7 @@ apply_bbg() {
     # Update security/Kconfig
     local security_kconfig="$security_dir/Kconfig"
     if ! grep -q 'security/baseband-guard/Kconfig' "$security_kconfig"; then
-        if grep -n '^endmenu[[:space:]]*$' "$security_kconfig" >/dev/null 2>&1; then
+        if grep -n '^endmenu[[:space:]]*$' "$security_kconfig" > /dev/null 2>&1; then
             awk '
               { a[NR]=$0 } END {
                 last=0; for(i=1;i<=NR;i++) if(a[i] ~ /^endmenu[[:space:]]*$/) last=i;
