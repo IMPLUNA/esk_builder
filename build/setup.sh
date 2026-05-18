@@ -204,46 +204,17 @@ apply_bbg() {
     info "Apply Baseband Guard (BBG) patches"
 
     local bbg_dir="$BBG_DIR"
-    local security_dir="$KERNEL/security"
-    local include_dir="$KERNEL/include"
 
     # Clone BBG repository
     git_clone "$BBG_REPO" "$bbg_dir"
 
-    # Create symlink in security directory
-    local bbg_symlink="$security_dir/baseband-guard"
-    if [[ -L "$bbg_symlink" ]]; then
-        rm -f "$bbg_symlink"
-    fi
-    ln -sfn "$(realpath --relative-to="$security_dir" "$bbg_dir")" "$bbg_symlink"
-    info "BBG symlink created"
+    # Run BBG's own setup.sh from the kernel source directory.
+    # It handles symlink, Makefile, Kconfig, and SELinux patches correctly.
+    pushd "$KERNEL" > /dev/null
+    bash "$bbg_dir/setup.sh"
+    popd > /dev/null
 
-    # Update security/Makefile
-    local security_makefile="$security_dir/Makefile"
-    if ! grep -q 'baseband-guard/baseband_guard.o' "$security_makefile"; then
-        printf '\nobj-$(CONFIG_BBG) += baseband-guard/\n' >> "$security_makefile"
-        info "Security Makefile updated"
-    fi
-
-    # Update security/Kconfig
-    local security_kconfig="$security_dir/Kconfig"
-    if ! grep -q 'security/baseband-guard/Kconfig' "$security_kconfig"; then
-        if grep -n '^endmenu[[:space:]]*$' "$security_kconfig" > /dev/null 2>&1; then
-            awk '
-              { a[NR]=$0 } END {
-                last=0; for(i=1;i<=NR;i++) if(a[i] ~ /^endmenu[[:space:]]*$/) last=i;
-                for(i=1;i<=NR;i++){
-                  if(i==last) print "source \"security/baseband-guard/Kconfig\"";
-                  print a[i];
-                }
-              }' "$security_kconfig" > "$security_kconfig.tmp" && mv "$security_kconfig.tmp" "$security_kconfig"
-        else
-            printf '\nsource "security/baseband-guard/Kconfig"\n' >> "$security_kconfig"
-        fi
-        info "Security Kconfig updated"
-    fi
-
-    # Enable BBG in kernel config
+    # Enable BBG in kernel defconfig
     config --enable CONFIG_BBG
 
     # NOTE: CONFIG_LSM is updated in build_kernel() after defconfig merge,
