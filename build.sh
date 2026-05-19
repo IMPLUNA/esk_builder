@@ -65,6 +65,11 @@ validate_env() {
             if is_true "$BBG" && ! is_true "$KSU"; then
                 warn "BBG works best with ReSukiSU enabled for module management"
             fi
+
+            # KPM requires ReSukiSU
+            if is_true "$KPM" && ! is_true "$KSU"; then
+                error "KPM requires ReSukiSU (KSU=true)"
+            fi
             ;;
         *)
             fatal "Unknown environment validation stage: $stage"

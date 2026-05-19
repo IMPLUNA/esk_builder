@@ -78,6 +78,7 @@ init_build() {
     KSU="$(resolve_bool "${KSU-}" "$KSU_DEFAULT")"
     SUSFS="$(resolve_bool "${SUSFS-}" "$SUSFS_DEFAULT")"
     LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
+    KPM="$(resolve_bool "${KPM-}" "$KPM_DEFAULT")"
     BBG="$(resolve_bool "${BBG-}" "$BBG_DEFAULT")"
     BBR_V3="$(resolve_bool "${BBR_V3-}" "$BBR_V3_DEFAULT")"
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
@@ -295,6 +296,17 @@ prepare_build() {
         apply_bbg
     else
         config --disable CONFIG_BBG
+    fi
+
+    # KPM (Kernel Patch Module) - requires ReSukiSU
+    if is_true "$KPM"; then
+        info "Enable KPM (Kernel Patch Module)"
+        config --enable CONFIG_KPM
+        config --enable CONFIG_KALLSYMS
+        config --enable CONFIG_KALLSYMS_ALL
+        success "KPM enabled"
+    else
+        config --disable CONFIG_KPM
     fi
 
     # BBR v3 Network Optimization

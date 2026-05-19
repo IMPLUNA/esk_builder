@@ -67,12 +67,12 @@ xaga-bbr *args:
 generic-bbr *args:
     env BUILD_TARGET=generic BBR_V3=true {{args}} ./build.sh
 
-# Build with all security features (KSU + SUSFS + BBG + BBR v3)
+# Build with all security features (KSU + SUSFS + KPM + BBG + BBR v3)
 xaga-full *args:
-    env BUILD_TARGET=xaga KSU=true SUSFS=true BBG=true BBR_V3=true {{args}} ./build.sh
+    env BUILD_TARGET=xaga KSU=true SUSFS=true KPM=true BBG=true BBR_V3=true {{args}} ./build.sh
 
 generic-full *args:
-    env BUILD_TARGET=generic KSU=true SUSFS=true BBG=true BBR_V3=true {{args}} ./build.sh
+    env BUILD_TARGET=generic KSU=true SUSFS=true KPM=true BBG=true BBR_V3=true {{args}} ./build.sh
 
 clean:
     rm -rf out work staged boot_image build.log github.json

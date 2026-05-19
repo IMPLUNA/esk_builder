@@ -18,6 +18,10 @@ on:
       LXC:
         type: boolean
         required: true
+      KPM:
+        type: boolean
+        required: false
+        default: false
       BBG:
         type: boolean
         required: false
@@ -59,6 +63,11 @@ on:
 
       LXC:
         description: "Apply LXC patch?"
+        default: false
+        type: boolean
+
+      KPM:
+        description: "Enable KPM (Kernel Patch Module)?"
         default: false
         type: boolean
 
@@ -145,6 +154,7 @@ jobs:
           KSU: ${{ inputs.KSU }}
           SUSFS: ${{ inputs.SUSFS }}
           LXC: ${{ inputs.LXC }}
+          KPM: ${{ inputs.KPM }}
           BBG: ${{ inputs.BBG }}
           BBR_V3: ${{ inputs.BBR_V3 }}
           STOCK_CONFIG: ${{ inputs.STOCK_CONFIG }}

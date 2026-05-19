@@ -149,6 +149,15 @@ just xaga-bbr KSU=true SUSFS=true
 just xaga BBR_V3=true KSU=true SUSFS=true
 ```
 
+### KPM (Kernel Patch Module)
+
+Kernel-level patch module support based on KernelPatch, integrated via ReSukiSU. Requires `KSU=true`.
+
+```bash
+# Build with KPM enabled
+just xaga KSU=true SUSFS=true KPM=true
+```
+
 ### Full Security Build
 
 Build with all security features enabled:
@@ -193,6 +202,7 @@ just clean
 | KSU             | enable ReSukiSU setup and config             | boolean                          | `false`                           |
 | SUSFS           | apply SuSFS patches and config               | boolean                          | `false`                           |
 | LXC             | apply the LXC patch                          | boolean                          | `false`                           |
+| KPM             | enable KPM (Kernel Patch Module, requires KSU) | boolean                       | `false`                           |
 | BBG             | enable Baseband Guard (LSM baseband protection) | boolean                       | `false`                           |
 | BBR_V3          | enable BBR v3 network congestion control     | boolean                          | `false`                           |
 | STOCK_CONFIG    | apply the stock config patch                 | `auto`, `true`, `false`          | `xaga: false`, `generic: true`    |
@@ -212,6 +222,7 @@ notes:
 - `LXC` only works with `BUILD_TARGET=xaga`
 - `BBG` works best with `KSU=true` for ReSukiSU module management
 - `BBR_V3` enables BBR v3 as the default TCP congestion control algorithm
+- `KPM` requires `KSU=true` (ReSukiSU includes built-in KPM support)
 - `TG_NOTIFY=true` needs `TG_BOT_TOKEN` and `TG_CHAT_ID`
 - `GH_TOKEN` is optional, but helps when fetching latest release assets
 
