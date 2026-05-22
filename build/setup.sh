@@ -269,7 +269,6 @@ apply_bbr() {
 COMPAT_EOF
 
     local insert_line=$(grep -n "^\*/" "$bbr_c" | head -1 | cut -d: -f1)
-    
     if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
         # Insert compatibility code right after the first comment block closes
         sed -i "$((insert_line + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
