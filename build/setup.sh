@@ -247,8 +247,7 @@ apply_bbr() {
     # Inject Linux 5.10 kernel compatibility code directly
     info "Injecting Linux 5.10 compatibility macros"
     cat > /tmp/bbr_compat_inject.txt << 'COMPAT_EOF'
-
-/* === Linux 5.10 Kernel Compatibility Layer === */
+// === Linux 5.10 Kernel Compatibility Layer ===
 #ifndef GSO_LEGACY_MAX_SIZE
 #define GSO_LEGACY_MAX_SIZE GSO_MAX_SIZE
 #endif
@@ -265,18 +264,18 @@ apply_bbr() {
 #define get_random_u32_below(limit) \
 	((limit) ? (get_random_u32() % (limit)) : 0)
 #endif
-/* === End Compatibility Layer === */
+// === End Compatibility Layer ===
 
 COMPAT_EOF
 
-    # Find the line with the BBR algorithm comment and insert compat code before it
-    # This avoids breaking any existing block comments
-    local insert_line=$(grep -n "BBR (Bottleneck Bandwidth" "$bbr_c" | head -1 | cut -d: -f1)
+    # Find the line AFTER the first block comment ends (*/) and insert compat code there
+    # This ensures we never nest /* */ inside existing comments
+    local insert_line=$(grep -n "^\*/" "$bbr_c" | head -1 | cut -d: -f1)
     
     if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
-        # Insert compatibility code before the algorithm description
-        sed -i "${insert_line}r /tmp/bbr_compat_inject.txt" "$bbr_c"
-        info "BBR v3 compatibility code injected at line $insert_line"
+        # Insert compatibility code right after the first comment block closes
+        sed -i "$((insert_line + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
+        info "BBR v3 compatibility code injected after line $insert_line (after block comment)"
     else
         # Fallback: insert after all #include statements
         local last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
