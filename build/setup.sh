@@ -42,7 +42,7 @@ EOF
 setup_ld_preload() {
     export LIBFAKETIME
     LIBFAKETIME=$(find /usr/lib* /lib* -name libfaketimeMT.so.1 -print -quit 2> /dev/null || true)
-    
+
     # 预设默认路径，避免空值导致重复下载
     export LIBFAKESTAT
     LIBFAKESTAT="${LIBFAKESTAT:-$LIBFAKESTAT_DIR/libfakestat.so}"
@@ -196,7 +196,8 @@ apply_susfs() {
     cp -R "$susfs_patches"/fs/* ./fs
     cp -R "$susfs_patches"/include/* ./include
 
-    patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$susfs_patches"/50_add_susfs_in_gki-android*-*.patch
+    # 去掉 -s，输出打补丁日志
+    patch -p1 --fuzz=3 --no-backup-if-mismatch < "$susfs_patches"/50_add_susfs_in_gki-android*-*.patch
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
@@ -269,12 +270,12 @@ prepare_build() {
     # LXC
     if is_true "$LXC"; then
         info "Apply LXC patch"
-        patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
+        patch -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/lxc_support.patch"
     fi
 
     if is_true "$STOCK_CONFIG"; then
         info "Apply stock config patch"
-        patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/stock_config.patch"
+        patch -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/stock_config.patch"
     fi
 
     # Baseband Guard (BBG)
