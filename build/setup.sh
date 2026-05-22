@@ -229,13 +229,14 @@ apply_bbr() {
 
     local bbr_v3_dir="$BBR_V3_DIR"
     local kernel_dir="$KERNEL"
+    local bbr_c="$kernel_dir/net/ipv4/tcp_bbr.c"
 
     # Clone Google BBR v3 repository
     git_clone "$BBR_V3_REPO" "$bbr_v3_dir"
 
     # Copy BBR v3 tcp_bbr.c implementation to kernel
     info "Integrating BBR v3 code from Google upstream"
-    cp "$bbr_v3_dir/net/ipv4/tcp_bbr.c" "$kernel_dir/net/ipv4/tcp_bbr.c"
+    cp "$bbr_v3_dir/net/ipv4/tcp_bbr.c" "$bbr_c"
 
     # Copy supporting BBR v3 header files if present
     if [[ -f "$bbr_v3_dir/include/net/tcp_bbr.h" ]]; then
@@ -243,12 +244,60 @@ apply_bbr() {
         cp "$bbr_v3_dir/include/net/tcp_bbr.h" "$kernel_dir/include/net/tcp_bbr.h"
     fi
 
-    # Apply Linux 5.10 kernel compatibility patch for BBR v3
-    info "Applying BBR v3 compatibility patches for Linux 5.10"
-    cd "$kernel_dir"
-    patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/bbr_v3_5.10_compat.patch" || \
-        warning "BBR v3 compatibility patch partial apply (may already be compatible)"
-    cd - > /dev/null
+    # Inject Linux 5.10 kernel compatibility code directly
+    info "Injecting Linux 5.10 compatibility macros"
+    cat > /tmp/bbr_compat_inject.txt << 'COMPAT_EOF'
+
+/* === Linux 5.10 Kernel Compatibility Layer === */
+#ifndef GSO_LEGACY_MAX_SIZE
+#define GSO_LEGACY_MAX_SIZE GSO_MAX_SIZE
+#endif
+
+#ifndef __bpf_kfunc
+#define __bpf_kfunc
+#endif
+
+#ifndef __kfunc
+#define __kfunc
+#endif
+
+#ifndef get_random_u32_below
+#define get_random_u32_below(limit) \
+	((limit) ? (get_random_u32() % (limit)) : 0)
+#endif
+/* === End Compatibility Layer === */
+
+COMPAT_EOF
+
+    # Find the line with the BBR algorithm comment and insert compat code before it
+    # This avoids breaking any existing block comments
+    local insert_line=$(grep -n "BBR (Bottleneck Bandwidth" "$bbr_c" | head -1 | cut -d: -f1)
+    
+    if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
+        # Insert compatibility code before the algorithm description
+        sed -i "${insert_line}r /tmp/bbr_compat_inject.txt" "$bbr_c"
+        info "BBR v3 compatibility code injected at line $insert_line"
+    else
+        # Fallback: insert after all #include statements
+        local last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
+        if [[ -n "$last_include" && "$last_include" -gt 0 ]]; then
+            sed -i "$((last_include + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
+            info "BBR v3 compatibility code injected after includes"
+        fi
+    fi
+
+    rm -f /tmp/bbr_compat_inject.txt
+
+    # Fix btf.h header includes for BPF compatibility
+    local btf_h="$kernel_dir/include/linux/btf.h"
+    if [[ -f "$btf_h" ]]; then
+        # Check if seq_file.h is already included
+        if ! grep -q "include.*seq_file.h" "$btf_h"; then
+            # Find the line with #ifndef _LINUX_BTF_H and add includes before it
+            sed -i '/#ifndef _LINUX_BTF_H/i #include <linux/seq_file.h>\n#include <linux/bpf.h>' "$btf_h"
+            info "Added missing includes to btf.h"
+        fi
+    fi
 
     # Configure defconfig
     local defconfig_file="$kernel_dir/arch/arm64/configs/$KERNEL_DEFCONFIG"

@@ -1,22 +1,27 @@
 --- a/include/linux/btf.h
 +++ b/include/linux/btf.h
-@@ -1,6 +1,8 @@
+@@ -1,5 +1,7 @@
  /* SPDX-License-Identifier: GPL-2.0 */
  /* Copyright (c) 2018 Facebook */
- #ifndef _LINUX_BTF_H
 +#include <linux/seq_file.h>
 +#include <linux/bpf.h>
+ #ifndef _LINUX_BTF_H
  #define _LINUX_BTF_H 1
  
- #include <uapi/linux/btf.h>
-
---- a/net/ipv4/tcp_bbr.c
-+++ b/net/ipv4/tcp_bbr.c
-@@ -20,6 +20,19 @@
- #include <net/tcp_bbr.h>
- #include <net/tcp_rate_check.h>
+@@ -7,3 +9,20 @@
  
-+/* Compatibility macros for Linux 5.10 */
+ /* Ensure BBG's __bpf_kfunc is available */
+ #ifndef __bpf_kfunc
+ #define __bpf_kfunc
+ #endif
+
+--- a/net/ipv4/tcp_bbr.c.in
++++ b/net/ipv4/tcp_bbr.c
+@@ -18,6 +18,25 @@
+ #include <net/pkt_sched.h>
+ #include <net/tcp.h>
+ 
++/* === Linux 5.10 Compatibility Macros === */
 +#ifndef GSO_LEGACY_MAX_SIZE
 +#define GSO_LEGACY_MAX_SIZE GSO_MAX_SIZE
 +#endif
@@ -25,10 +30,15 @@
 +#define __bpf_kfunc
 +#endif
 +
-+#ifndef get_random_u32_below
-+#define get_random_u32_below(limit) (get_random_u32() % (limit))
++#ifndef __kfunc
++#define __kfunc
 +#endif
 +
- /* Scale factor for rate in bps to kpbs inflection point (~1Gbps). */
- #define BBR_UNIT_SHIFT 10
- #define BBR_UNIT (1 << BBR_UNIT_SHIFT)
++#ifndef get_random_u32_below
++#define get_random_u32_below(limit) \
++	((limit) ? (get_random_u32() % (limit)) : 0)
++#endif
++
+ /* BBR (Bottleneck Bandwidth and RTT) congestion control algorithm.
+  *
+  * BBR provides robust throughput and low latency for network applications.
