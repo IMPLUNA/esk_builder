@@ -246,7 +246,7 @@ apply_bbr() {
 
     # Inject Linux 5.10 kernel compatibility code directly
     info "Injecting Linux 5.10 compatibility macros into $bbr_c"
-    
+
     # Verify tcp_bbr.c exists
     if [[ ! -f "$bbr_c" ]]; then
         error "tcp_bbr.c not found at $bbr_c"
@@ -277,12 +277,12 @@ COMPAT_EOF
     # Try to find the end of the first block comment (handles both "^*/" and " */")
     local insert_line
     insert_line=$(grep -n " \*/$" "$bbr_c" | head -1 | cut -d: -f1)
-    
+
     # Fallback: look for line ending with */
     if [[ -z "$insert_line" || "$insert_line" -eq 0 ]]; then
         insert_line=$(grep -n "\*/$" "$bbr_c" | head -1 | cut -d: -f1)
     fi
-    
+
     if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
         # Insert compatibility code right after the first comment block closes
         sed -i "$((insert_line + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
@@ -291,7 +291,7 @@ COMPAT_EOF
         # Final fallback: insert after all #include statements
         local last_include
         last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
-        
+
         if [[ -n "$last_include" && "$last_include" -gt 0 ]]; then
             sed -i "$((last_include + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
             info "BBR v3 compatibility code injected after last #include at line $last_include"
