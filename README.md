@@ -204,7 +204,7 @@ just clean
 | LXC             | apply the LXC patch                          | boolean                          | `false`                           |
 | KPM             | enable KPM (Kernel Patch Module, requires KSU) | boolean                       | `false`                           |
 | BBG             | enable Baseband Guard (LSM baseband protection) | boolean                       | `false`                           |
-| BBR_V3          | enable BBR v3 network congestion control     | boolean                          | `false`                           |
+| BBR_V3          | enable BBR congestion control                | boolean                          | `false`                           |
 | STOCK_CONFIG    | apply the stock config patch                 | `auto`, `true`, `false`          | `xaga: false`, `generic: true`    |
 | BRANCH_OVERRIDE | override the target kernel branch            | branch name                      | `xaga: 16.2-rebase`, `generic: main` |
 | JOBS            | set the make job count                       | integer                          | `nproc --all`                     |
@@ -221,7 +221,7 @@ notes:
 - `SUSFS` needs `KSU=true`
 - `LXC` only works with `BUILD_TARGET=xaga`
 - `BBG` works best with `KSU=true` for ReSukiSU module management
-- `BBR_V3` enables BBR v3 as the default TCP congestion control algorithm
+- `BBR_V3` enables BBR as the default TCP congestion control algorithm (requires fq scheduler)
 - `KPM` requires `KSU=true` (ReSukiSU includes built-in KPM support)
 - `TG_NOTIFY=true` needs `TG_BOT_TOKEN` and `TG_CHAT_ID`
 - `GH_TOKEN` is optional, but helps when fetching latest release assets

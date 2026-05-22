@@ -77,7 +77,7 @@ on:
         type: boolean
 
       BBR_V3:
-        description: "Enable BBR v3 network optimization?"
+        description: "Enable BBR congestion control?"
         default: false
         type: boolean
 

@@ -224,8 +224,8 @@ apply_bbg() {
     success "Baseband Guard applied!"
 }
 
-apply_bbr_v3() {
-    info "Apply BBR v3 network optimization"
+apply_bbr() {
+    info "Apply BBR congestion control optimization"
 
     local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
     if [[ -f "$defconfig_file" ]]; then
@@ -234,17 +234,17 @@ apply_bbr_v3() {
         sed -i '/CONFIG_TCP_CONG_BBR3/d' "$defconfig_file"
         sed -i '/CONFIG_TCP_CONG_BBR/d' "$defconfig_file"
         sed -i '/CONFIG_NET_SCH_FQ/d' "$defconfig_file"
+        sed -i '/CONFIG_DEFAULT_BBR/d' "$defconfig_file"
 
         cat >> "$defconfig_file" << EOF
 CONFIG_TCP_CONG_BBR=y
-CONFIG_TCP_CONG_BBR3=y
 CONFIG_NET_SCH_FQ=y
-CONFIG_DEFAULT_TCP_CONG="bbr"
+CONFIG_DEFAULT_BBR=y
 EOF
-        info "BBR v3 configuration added to defconfig"
+        info "BBR configuration added to defconfig"
     fi
 
-    success "BBR v3 network optimization applied!"
+    success "BBR congestion control optimization applied!"
 }
 
 prepare_build() {
@@ -309,9 +309,9 @@ prepare_build() {
         config --disable CONFIG_KPM
     fi
 
-    # BBR v3 Network Optimization
+    # BBR Network Optimization
     if is_true "$BBR_V3"; then
-        apply_bbr_v3
+        apply_bbr
     fi
 
     # Config Clang LTO

@@ -38,6 +38,49 @@ build_kernel() {
         info "CONFIG_LSM patched in .config for BBG"
     fi
 
+    # BBR: verify BBR configs landed in .config, patch if missing
+    if is_true "$BBR_V3"; then
+        local config_changed=false
+        if ! grep -q '^CONFIG_TCP_CONG_BBR=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_TCP_CONG_BBR=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if ! grep -q '^CONFIG_NET_SCH_FQ=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_NET_SCH_FQ=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if ! grep -q '^CONFIG_DEFAULT_BBR=y' "$KERNEL_OUT/.config"; then
+            sed -i '/^CONFIG_DEFAULT_CUBIC=y/d' "$KERNEL_OUT/.config"
+            echo 'CONFIG_DEFAULT_BBR=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if $config_changed; then
+            make "${MAKE_ARGS[@]}" olddefconfig
+            info "BBR configs patched in .config"
+        fi
+    fi
+
+    # KPM: verify KPM config landed in .config, patch if missing
+    if is_true "$KPM"; then
+        local config_changed=false
+        if ! grep -q '^CONFIG_KPM=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_KPM=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if ! grep -q '^CONFIG_KALLSYMS=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_KALLSYMS=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if ! grep -q '^CONFIG_KALLSYMS_ALL=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_KALLSYMS_ALL=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        if $config_changed; then
+            make "${MAKE_ARGS[@]}" olddefconfig
+            info "KPM configs patched in .config"
+        fi
+    fi
+
     info "Building Image and modules..."
     make "${MAKE_ARGS[@]}" Image modules
     success "Kernel built successfully"
