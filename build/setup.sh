@@ -268,14 +268,16 @@ apply_bbr() {
 
 COMPAT_EOF
 
-    local insert_line=$(grep -n "^\*/" "$bbr_c" | head -1 | cut -d: -f1)
+    local insert_line
+    insert_line=$(grep -n "^\*/" "$bbr_c" | head -1 | cut -d: -f1)
     if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
         # Insert compatibility code right after the first comment block closes
         sed -i "$((insert_line + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
         info "BBR v3 compatibility code injected after line $insert_line (after block comment)"
     else
         # Fallback: insert after all #include statements
-        local last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
+        local last_include
+        last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
         if [[ -n "$last_include" && "$last_include" -gt 0 ]]; then
             sed -i "$((last_include + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
             info "BBR v3 compatibility code injected after includes"
