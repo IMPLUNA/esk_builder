@@ -36,6 +36,12 @@ build_kernel() {
         sed -i 's/CONFIG_LSM=\(.*\)/CONFIG_LSM=\1,baseband_guard/' "$KERNEL_OUT/.config"
         make "${MAKE_ARGS[@]}" olddefconfig
         info "CONFIG_LSM patched in .config for BBG"
+
+        # Ensure all LSM modules are explicitly configured
+        cd "$KERNEL_OUT"
+        echo 'CONFIG_LSM="lockdown,yama,loadpin,safesetid,integrity,selinux,bpf,baseband_guard"' >> .config
+        make "${MAKE_ARGS[@]}" olddefconfig
+        cd "$KERNEL"
     fi
 
     # BBR: verify BBR configs landed in .config, patch if missing
