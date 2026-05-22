@@ -117,7 +117,7 @@ prepare_dirs() {
     done
 
     if is_true "$RESET_SOURCES"; then
-        for dir in "$KERNEL" "$BUILD_TOOLS" "$MKBOOTIMG" "$SUSFS_DIR"; do
+        for dir in "$KERNEL" "$BUILD_TOOLS" "$MKBOOTIMG" "$SUSFS_DIR" "$BBR_V3_DIR"; do
             reset_dir "$dir"
         done
     fi
@@ -225,13 +225,29 @@ apply_bbg() {
 }
 
 apply_bbr() {
-    info "Apply BBR congestion control optimization"
+    info "Apply BBR v3 congestion control optimization"
 
-    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    local bbr_v3_dir="$BBR_V3_DIR"
+    local kernel_dir="$KERNEL"
+
+    # Clone Google BBR v3 repository
+    git_clone "$BBR_V3_REPO" "$bbr_v3_dir"
+
+    # Copy BBR v3 tcp_bbr.c implementation to kernel
+    info "Integrating BBR v3 code from Google upstream"
+    cp "$bbr_v3_dir/net/ipv4/tcp_bbr.c" "$kernel_dir/net/ipv4/tcp_bbr.c"
+
+    # Copy supporting BBR v3 header files if present
+    if [[ -f "$bbr_v3_dir/include/net/tcp_bbr.h" ]]; then
+        mkdir -p "$kernel_dir/include/net"
+        cp "$bbr_v3_dir/include/net/tcp_bbr.h" "$kernel_dir/include/net/tcp_bbr.h"
+    fi
+
+    # Configure defconfig
+    local defconfig_file="$kernel_dir/arch/arm64/configs/$KERNEL_DEFCONFIG"
     if [[ -f "$defconfig_file" ]]; then
         # Remove stale entries if present
         sed -i '/CONFIG_DEFAULT_TCP_CONG/d' "$defconfig_file"
-        sed -i '/CONFIG_TCP_CONG_BBR3/d' "$defconfig_file"
         sed -i '/CONFIG_TCP_CONG_BBR/d' "$defconfig_file"
         sed -i '/CONFIG_NET_SCH_FQ/d' "$defconfig_file"
         sed -i '/CONFIG_DEFAULT_BBR/d' "$defconfig_file"
@@ -241,10 +257,10 @@ CONFIG_TCP_CONG_BBR=y
 CONFIG_NET_SCH_FQ=y
 CONFIG_DEFAULT_BBR=y
 EOF
-        info "BBR configuration added to defconfig"
+        info "BBR v3 configuration added to defconfig"
     fi
 
-    success "BBR congestion control optimization applied!"
+    success "BBR v3 congestion control optimization applied!"
 }
 
 prepare_build() {

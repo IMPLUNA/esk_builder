@@ -62,6 +62,9 @@ LIBFAKESTAT_RELEASE_API="https://api.github.com/repos/cctv18/libfakestat/release
 # Baseband Guard repository
 BBG_REPO="github.com:vc-teahouse/Baseband-guard@main"
 
+# BBR v3 repository (Google official)
+BBR_V3_REPO="github.com:google/bbr@v3"
+
 case "$BUILD_TARGET" in
     xaga)
         KERNEL_REPO="github.com:ESK-Project/android_kernel_xiaomi_mt6895@${BRANCH_OVERRIDE:-16.2-rebase}"
@@ -94,6 +97,7 @@ KERNEL_PATCHES="$WORKSPACE/kernel_patches"
 SUSFS_DIR="$WORKSPACE/susfs"
 LIBFAKESTAT_DIR="$WORKSPACE/libfakestat"
 BBG_DIR="$WORKSPACE/Baseband-guard"
+BBR_V3_DIR="$WORKSPACE/bbr_v3"
 
 # Output stuff
 KERNEL_OUT="$WORKSPACE/work"

@@ -139,15 +139,19 @@ just xaga BBG=true KSU=true SUSFS=true
 
 ### BBR v3 Network Optimization
 
-Google's advanced congestion control algorithm for improved network performance.
+Google's advanced congestion control algorithm (v3) for improved network performance. Integrates the official Google BBR implementation directly from the [google/bbr](https://github.com/google/bbr) repository.
 
 ```bash
 # Build with BBR v3 enabled
-just xaga-bbr KSU=true SUSFS=true
-
-# Or manually
 just xaga BBR_V3=true KSU=true SUSFS=true
+
+# Or with xaga-full shortcut
+just xaga-full
 ```
+
+- `BBR_V3=true` pulls the latest v3 implementation from Google's official repository and integrates the tcp_bbr.c code directly into the kernel
+- Sets `CONFIG_TCP_CONG_BBR=y` as the default congestion control algorithm
+- Requires `CONFIG_NET_SCH_FQ=y` (FQ scheduler support)
 
 ### KPM (Kernel Patch Module)
 
