@@ -42,7 +42,10 @@ EOF
 setup_ld_preload() {
     export LIBFAKETIME
     LIBFAKETIME=$(find /usr/lib* /lib* -name libfaketimeMT.so.1 -print -quit 2> /dev/null || true)
+    
+    # 预设默认路径，避免空值导致重复下载
     export LIBFAKESTAT
+    LIBFAKESTAT="${LIBFAKESTAT:-$LIBFAKESTAT_DIR/libfakestat.so}"
 
     if [[ ! -f "$LIBFAKESTAT" ]]; then
         local archive="$WORKSPACE/libfakestat.tar.gz"
@@ -80,7 +83,7 @@ init_build() {
     LXC="$(resolve_bool "${LXC-}" "$LXC_DEFAULT")"
     KPM="$(resolve_bool "${KPM-}" "$KPM_DEFAULT")"
     BBG="$(resolve_bool "${BBG-}" "$BBG_DEFAULT")"
-    BBR_V3="$(resolve_bool "${BBR_V3-}" "$BBR_V3_DEFAULT")"
+    # BBRv3 已在内核源码中自带，不再需要外部开关
     STOCK_CONFIG="$(resolve_bool "${STOCK_CONFIG-}" "$STOCK_CONFIG_DEFAULT")"
 
     TG_NOTIFY="$(resolve_bool "${TG_NOTIFY-}" "$TG_NOTIFY_DEFAULT")"
@@ -117,7 +120,8 @@ prepare_dirs() {
     done
 
     if is_true "$RESET_SOURCES"; then
-        for dir in "$KERNEL" "$BUILD_TOOLS" "$MKBOOTIMG" "$SUSFS_DIR" "$BBR_V3_DIR"; do
+        # 不再重置 BBRv3 目录，内核原生已集成
+        for dir in "$KERNEL" "$BUILD_TOOLS" "$MKBOOTIMG" "$SUSFS_DIR"; do
             reset_dir "$dir"
         done
     fi
@@ -170,10 +174,10 @@ setup_toolchain() {
         -d "$WORKSPACE" -o "clang-archive" "$clang_url"
     )
 
-    if aria2c "${aria_opts[@]}"; then
-        success "Clang download successful!"
-    else
+    # 下载失败则立即终止
+    if ! aria2c "${aria_opts[@]}"; then
         error "Clang download failed."
+        exit 1
     fi
 
     tar -xzf "$WORKSPACE/clang-archive" -C "$CLANG"
@@ -210,9 +214,12 @@ apply_bbg() {
     git_clone "$BBG_REPO" "$bbg_dir"
 
     # Run BBG's own setup.sh from the kernel source directory.
-    # It handles symlink, Makefile, Kconfig, and SELinux patches correctly.
     pushd "$KERNEL" > /dev/null
-    bash "$bbg_dir/setup.sh"
+    if ! bash "$bbg_dir/setup.sh"; then
+        error "BBG setup.sh 执行失败，已终止构建。"
+        popd > /dev/null
+        exit 1
+    fi
     popd > /dev/null
 
     # Enable BBG in kernel defconfig
@@ -224,114 +231,7 @@ apply_bbg() {
     success "Baseband Guard applied!"
 }
 
-apply_bbr() {
-    info "Apply BBR v3 congestion control optimization"
-
-    local bbr_v3_dir="$BBR_V3_DIR"
-    local kernel_dir="$KERNEL"
-    local bbr_c="$kernel_dir/net/ipv4/tcp_bbr.c"
-
-    # Clone Google BBR v3 repository
-    git_clone "$BBR_V3_REPO" "$bbr_v3_dir"
-
-    # Copy BBR v3 tcp_bbr.c implementation to kernel
-    info "Integrating BBR v3 code from Google upstream"
-    cp "$bbr_v3_dir/net/ipv4/tcp_bbr.c" "$bbr_c"
-
-    # Copy supporting BBR v3 header files if present
-    if [[ -f "$bbr_v3_dir/include/net/tcp_bbr.h" ]]; then
-        mkdir -p "$kernel_dir/include/net"
-        cp "$bbr_v3_dir/include/net/tcp_bbr.h" "$kernel_dir/include/net/tcp_bbr.h"
-    fi
-
-    # Inject Linux 5.10 kernel compatibility code directly
-    info "Injecting Linux 5.10 compatibility macros into $bbr_c"
-
-    # Verify tcp_bbr.c exists
-    if [[ ! -f "$bbr_c" ]]; then
-        error "tcp_bbr.c not found at $bbr_c"
-    fi
-
-    cat > /tmp/bbr_compat_inject.txt << 'COMPAT_EOF'
-// === Linux 5.10 Kernel Compatibility Layer ===
-#ifndef GSO_LEGACY_MAX_SIZE
-#define GSO_LEGACY_MAX_SIZE GSO_MAX_SIZE
-#endif
-
-#ifndef __bpf_kfunc
-#define __bpf_kfunc
-#endif
-
-#ifndef __kfunc
-#define __kfunc
-#endif
-
-#ifndef get_random_u32_below
-#define get_random_u32_below(limit) \
-	((limit) ? (get_random_u32() % (limit)) : 0)
-#endif
-// === End Compatibility Layer ===
-
-COMPAT_EOF
-
-    # Try to find the end of the first block comment (handles both "^*/" and " */")
-    local insert_line
-    insert_line=$(grep -n " \*/$" "$bbr_c" | head -1 | cut -d: -f1)
-
-    # Fallback: look for line ending with */
-    if [[ -z "$insert_line" || "$insert_line" -eq 0 ]]; then
-        insert_line=$(grep -n "\*/$" "$bbr_c" | head -1 | cut -d: -f1)
-    fi
-
-    if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
-        # Insert compatibility code right after the first comment block closes
-        sed -i "$((insert_line + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
-        info "BBR v3 compatibility code injected after line $insert_line"
-    else
-        # Final fallback: insert after all #include statements
-        local last_include
-        last_include=$(grep -n "^#include" "$bbr_c" | tail -1 | cut -d: -f1)
-
-        if [[ -n "$last_include" && "$last_include" -gt 0 ]]; then
-            sed -i "$((last_include + 1))r /tmp/bbr_compat_inject.txt" "$bbr_c"
-            info "BBR v3 compatibility code injected after last #include at line $last_include"
-        else
-            warning "Could not find suitable insertion point for BBR v3 compatibility code"
-        fi
-    fi
-
-    rm -f /tmp/bbr_compat_inject.txt
-
-    # Fix btf.h header includes for BPF compatibility
-    local btf_h="$kernel_dir/include/linux/btf.h"
-    if [[ -f "$btf_h" ]]; then
-        # Check if seq_file.h is already included
-        if ! grep -q "include.*seq_file.h" "$btf_h"; then
-            # Find the line with #ifndef _LINUX_BTF_H and add includes before it
-            sed -i '/#ifndef _LINUX_BTF_H/i #include <linux/seq_file.h>\n#include <linux/bpf.h>' "$btf_h"
-            info "Added missing includes to btf.h"
-        fi
-    fi
-
-    # Configure defconfig
-    local defconfig_file="$kernel_dir/arch/arm64/configs/$KERNEL_DEFCONFIG"
-    if [[ -f "$defconfig_file" ]]; then
-        # Remove stale entries if present
-        sed -i '/CONFIG_DEFAULT_TCP_CONG/d' "$defconfig_file"
-        sed -i '/CONFIG_TCP_CONG_BBR/d' "$defconfig_file"
-        sed -i '/CONFIG_NET_SCH_FQ/d' "$defconfig_file"
-        sed -i '/CONFIG_DEFAULT_BBR/d' "$defconfig_file"
-
-        cat >> "$defconfig_file" << EOF
-CONFIG_TCP_CONG_BBR=y
-CONFIG_NET_SCH_FQ=y
-CONFIG_DEFAULT_BBR=y
-EOF
-        info "BBR v3 configuration added to defconfig"
-    fi
-
-    success "BBR v3 congestion control optimization applied!"
-}
+# 整段 apply_bbr 函数已删除。内核源码已包含完整的 BBRv3 + sch_fq。
 
 prepare_build() {
     step "Prepare build"
@@ -386,6 +286,10 @@ prepare_build() {
 
     # KPM (Kernel Patch Module) - requires ReSukiSU
     if is_true "$KPM"; then
+        if ! is_true "$KSU"; then
+            error "KPM 依赖于 ReSukiSU，但当前编译未开启 KSU。请开启后重试。"
+            exit 1
+        fi
         info "Enable KPM (Kernel Patch Module)"
         config --enable CONFIG_KPM
         config --enable CONFIG_KALLSYMS
@@ -395,10 +299,7 @@ prepare_build() {
         config --disable CONFIG_KPM
     fi
 
-    # BBR Network Optimization
-    if is_true "$BBR_V3"; then
-        apply_bbr
-    fi
+    # BBR 相关处理已完全移除，依赖内核原生支持
 
     # Config Clang LTO
     clang_lto "$CLANG_LTO"
