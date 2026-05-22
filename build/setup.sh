@@ -268,8 +268,8 @@ apply_bbr() {
 
 COMPAT_EOF
 
-    # Find the line AFTER the first block comment ends (*/) and insert compat code there
-    # This ensures we never nest /* */ inside existing comments
+# Find the line AFTER the first block comment ends (*/) and insert compat code there
+# This ensures we never nest /* */ inside existing comments
     local insert_line=$(grep -n "^\*/" "$bbr_c" | head -1 | cut -d: -f1)
     
     if [[ -n "$insert_line" && "$insert_line" -gt 0 ]]; then
