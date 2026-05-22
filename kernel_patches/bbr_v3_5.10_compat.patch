@@ -1,0 +1,34 @@
+--- a/include/linux/btf.h
++++ b/include/linux/btf.h
+@@ -1,6 +1,8 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+ /* Copyright (c) 2018 Facebook */
+ #ifndef _LINUX_BTF_H
++#include <linux/seq_file.h>
++#include <linux/bpf.h>
+ #define _LINUX_BTF_H 1
+ 
+ #include <uapi/linux/btf.h>
+
+--- a/net/ipv4/tcp_bbr.c
++++ b/net/ipv4/tcp_bbr.c
+@@ -20,6 +20,19 @@
+ #include <net/tcp_bbr.h>
+ #include <net/tcp_rate_check.h>
+ 
++/* Compatibility macros for Linux 5.10 */
++#ifndef GSO_LEGACY_MAX_SIZE
++#define GSO_LEGACY_MAX_SIZE GSO_MAX_SIZE
++#endif
++
++#ifndef __bpf_kfunc
++#define __bpf_kfunc
++#endif
++
++#ifndef get_random_u32_below
++#define get_random_u32_below(limit) (get_random_u32() % (limit))
++#endif
++
+ /* Scale factor for rate in bps to kpbs inflection point (~1Gbps). */
+ #define BBR_UNIT_SHIFT 10
+ #define BBR_UNIT (1 << BBR_UNIT_SHIFT)

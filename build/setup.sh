@@ -243,6 +243,13 @@ apply_bbr() {
         cp "$bbr_v3_dir/include/net/tcp_bbr.h" "$kernel_dir/include/net/tcp_bbr.h"
     fi
 
+    # Apply Linux 5.10 kernel compatibility patch for BBR v3
+    info "Applying BBR v3 compatibility patches for Linux 5.10"
+    cd "$kernel_dir"
+    patch -s -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/bbr_v3_5.10_compat.patch" || \
+        warning "BBR v3 compatibility patch partial apply (may already be compatible)"
+    cd - > /dev/null
+
     # Configure defconfig
     local defconfig_file="$kernel_dir/arch/arm64/configs/$KERNEL_DEFCONFIG"
     if [[ -f "$defconfig_file" ]]; then
