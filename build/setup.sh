@@ -255,6 +255,11 @@ prepare_build() {
 
     if is_true "$KSU"; then
         info "Setup ReSukiSU"
+        # Pass KPM flag to ReSukiSU setup if KPM is enabled
+        if is_true "$KPM"; then
+            export KPM=1
+            info "ReSukiSU KPM mode enabled"
+        fi
         install_ksu "ESK-Project/ReSukiSU" "main"
         config --enable CONFIG_KSU
         success "ReSukiSU added"
@@ -291,13 +296,13 @@ prepare_build() {
             error "KPM 依赖于 ReSukiSU，但当前编译未开启 KSU。请开启后重试。"
             exit 1
         fi
-        info "Enable KPM (Kernel Patch Module)"
+        info "Enable KPM (Kernel Patch Module) in kernel config"
         config --enable CONFIG_MODULES
         config --enable CONFIG_KPM
         config --enable CONFIG_KALLSYMS
         config --enable CONFIG_KALLSYMS_ALL
         config --enable CONFIG_KPROBES
-        success "KPM enabled"
+        success "KPM kernel config enabled"
     else
         config --disable CONFIG_KPM
     fi

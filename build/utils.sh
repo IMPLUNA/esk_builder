@@ -122,7 +122,14 @@ install_ksu() {
     local repo="$1"
     local ref="$2"
     info "Install ReSukiSU: $repo@$ref"
-    curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/kernel/setup.sh" | bash -s "$ref"
+    
+    # Run ReSukiSU setup.sh with environment inherited from parent
+    # This ensures any KPM=1 or other flags are passed through
+    if ! curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/kernel/setup.sh" | bash -s "$ref"; then
+        error "ReSukiSU setup.sh failed"
+    fi
+    
+    info "ReSukiSU setup completed"
 }
 
 # Wrapper for scripts/config

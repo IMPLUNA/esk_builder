@@ -230,6 +230,42 @@ notes:
 - `TG_NOTIFY=true` needs `TG_BOT_TOKEN` and `TG_CHAT_ID`
 - `GH_TOKEN` is optional, but helps when fetching latest release assets
 
+## troubleshooting kpm
+
+if kpm doesn't appear to work after flashing:
+
+**check kernel config during build:**
+
+```bash
+# Verify KPM configs are set
+./check_kpm.sh work
+
+# Or manually check
+grep -E 'CONFIG_KPM|CONFIG_KALLSYMS|CONFIG_KPROBES' work/.config
+```
+
+**verify at runtime on device:**
+
+```bash
+# Check if KPM module loaded
+lsmod | grep kpm
+
+# Check kernel logs
+dmesg | grep -i kpm
+
+# Verify kernel supports KPM
+cat /proc/kpm
+
+# Use KernelPatch CLI to check status
+kpm status
+```
+
+**common issues:**
+
+- `CONFIG_KPM=y` but module doesn't load: ReSukiSU setup.sh may not have run with KPM flag enabled
+- No `kpm` command available: Install KernelPatch CLI or use `kpm` from ReSukiSU project
+- Kernel build succeeds but no KPM: ensure `KSU=true` is set (KPM depends on ReSukiSU integration)
+
 ## output
 
 | file                          | description                             |
