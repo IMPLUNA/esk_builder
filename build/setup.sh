@@ -292,9 +292,11 @@ prepare_build() {
             exit 1
         fi
         info "Enable KPM (Kernel Patch Module)"
+        config --enable CONFIG_MODULES
         config --enable CONFIG_KPM
         config --enable CONFIG_KALLSYMS
         config --enable CONFIG_KALLSYMS_ALL
+        config --enable CONFIG_KPROBES
         success "KPM enabled"
     else
         config --disable CONFIG_KPM

@@ -69,18 +69,36 @@ build_kernel() {
     # KPM: verify KPM config landed in .config, patch if missing
     if is_true "$KPM"; then
         local config_changed=false
+
+        # KPM requires MODULES to be enabled
+        if ! grep -q '^CONFIG_MODULES=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_MODULES=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+
+        # KPM core config
         if ! grep -q '^CONFIG_KPM=y' "$KERNEL_OUT/.config"; then
             echo 'CONFIG_KPM=y' >> "$KERNEL_OUT/.config"
             config_changed=true
         fi
+
+        # KALLSYMS is required for KPM to work properly
         if ! grep -q '^CONFIG_KALLSYMS=y' "$KERNEL_OUT/.config"; then
             echo 'CONFIG_KALLSYMS=y' >> "$KERNEL_OUT/.config"
             config_changed=true
         fi
+
         if ! grep -q '^CONFIG_KALLSYMS_ALL=y' "$KERNEL_OUT/.config"; then
             echo 'CONFIG_KALLSYMS_ALL=y' >> "$KERNEL_OUT/.config"
             config_changed=true
         fi
+
+        # KPM may also need CONFIG_KPROBES support
+        if ! grep -q '^CONFIG_KPROBES=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_KPROBES=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+
         if $config_changed; then
             make "${MAKE_ARGS[@]}" olddefconfig
             info "KPM configs patched in .config"

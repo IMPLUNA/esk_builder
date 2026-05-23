@@ -1,0 +1,10 @@
+--- a/arch/arm64/configs/gki_defconfig
++++ b/arch/arm64/configs/gki_defconfig
+@@ -1,6 +1,8 @@
+ # GKI configuration for ARM64
+ CONFIG_MODULES=y
++CONFIG_KALLSYMS=y
++CONFIG_KALLSYMS_ALL=y
+ 
+ # KPM (Kernel Patch Module) support
+ CONFIG_KPM=y
