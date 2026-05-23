@@ -123,18 +123,12 @@ install_ksu() {
     local ref="$2"
     info "Install ReSukiSU: $repo@$ref"
     
-    # Run ReSukiSU setup.sh with environment inherited from parent
-    # This ensures any KPM=1 or other flags are passed through
+    # Run ReSukiSU setup.sh - it will auto-integrate KPM if CONFIG_KPM is in defconfig
     if ! curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/kernel/setup.sh" | bash -s "$ref"; then
         error "ReSukiSU setup.sh failed"
     fi
-    
-    info "ReSukiSU setup completed"
-}
 
-# Wrapper for scripts/config
-config() {
-    "$KERNEL/scripts/config" --file "$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG" "$@"
+    info "ReSukiSU/KSU setup completed - KPM integration depends on CONFIG_KPM in defconfig"
 }
 
 clang_lto() {

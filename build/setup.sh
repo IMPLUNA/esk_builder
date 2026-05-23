@@ -255,11 +255,6 @@ prepare_build() {
 
     if is_true "$KSU"; then
         info "Setup ReSukiSU"
-        # Pass KPM flag to ReSukiSU setup if KPM is enabled
-        if is_true "$KPM"; then
-            export KPM=1
-            info "ReSukiSU KPM mode enabled"
-        fi
         install_ksu "ESK-Project/ReSukiSU" "main"
         config --enable CONFIG_KSU
         success "ReSukiSU added"
@@ -297,12 +292,14 @@ prepare_build() {
             exit 1
         fi
         info "Enable KPM (Kernel Patch Module) in kernel config"
-        config --enable CONFIG_MODULES
-        config --enable CONFIG_KPM
+        # Direct config file edits for KPM support (before olddefconfig)
+        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+        echo 'CONFIG_KPM=y' >> "$defconfig_file"
+        echo 'CONFIG_MODULES=y' >> "$defconfig_file"
         config --enable CONFIG_KALLSYMS
         config --enable CONFIG_KALLSYMS_ALL
         config --enable CONFIG_KPROBES
-        success "KPM kernel config enabled"
+        success "KPM kernel config enabled in defconfig"
     else
         config --disable CONFIG_KPM
     fi
