@@ -201,7 +201,9 @@ apply_susfs() {
 
     SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' ./include/linux/susfs.h | cut -d' ' -f3 | sed 's/"//g')
 
-    config --enable CONFIG_KSU_SUSFS
+    # Enable SuSFS in defconfig
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    grep -q '^CONFIG_KSU_SUSFS=y' "$defconfig_file" || echo 'CONFIG_KSU_SUSFS=y' >> "$defconfig_file"
 
     success "SuSFS applied!"
 }
@@ -224,7 +226,8 @@ apply_bbg() {
     popd > /dev/null
 
     # Enable BBG in kernel defconfig
-    config --enable CONFIG_BBG
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+    grep -q '^CONFIG_BBG=y' "$defconfig_file" || echo 'CONFIG_BBG=y' >> "$defconfig_file"
 
     # NOTE: CONFIG_LSM is updated in build_kernel() after defconfig merge,
     # because xaga's merge_config.sh would overwrite it here.
