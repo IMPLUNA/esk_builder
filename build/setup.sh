@@ -256,7 +256,6 @@ prepare_build() {
     if is_true "$KSU"; then
         info "Setup ReSukiSU"
         install_ksu "ESK-Project/ReSukiSU" "main"
-        config --enable CONFIG_KSU
         success "ReSukiSU added"
     fi
 
@@ -264,7 +263,9 @@ prepare_build() {
     if is_true "$SUSFS"; then
         apply_susfs
     else
-        config --disable CONFIG_KSU_SUSFS
+        # SuSFS disabled, clear config
+        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+        sed -i '/CONFIG_KSU_SUSFS/d' "$defconfig_file"
     fi
 
     # LXC
@@ -282,26 +283,29 @@ prepare_build() {
     if is_true "$BBG"; then
         apply_bbg
     else
-        config --disable CONFIG_BBG
+        # BBG disabled, clear config
+        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+        sed -i '/CONFIG_BBG/d' "$defconfig_file"
     fi
 
     # KPM (Kernel Patch Module) - requires ReSukiSU
     if is_true "$KPM"; then
         if ! is_true "$KSU"; then
-            error "KPM 依赖于 ReSukiSU，但当前编译未开启 KSU。请开启后重试。"
-            exit 1
+            error "KPM requires KSU=true"
         fi
-        info "Enable KPM (Kernel Patch Module) in kernel config"
-        # Direct config file edits for KPM support (before olddefconfig)
+        info "Enable KPM (Kernel Patch Module)"
         local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
-        echo 'CONFIG_KPM=y' >> "$defconfig_file"
-        echo 'CONFIG_MODULES=y' >> "$defconfig_file"
-        config --enable CONFIG_KALLSYMS
-        config --enable CONFIG_KALLSYMS_ALL
-        config --enable CONFIG_KPROBES
-        success "KPM kernel config enabled in defconfig"
+        # Add KPM and dependencies to defconfig
+        grep -q '^CONFIG_KPM=y' "$defconfig_file" || echo 'CONFIG_KPM=y' >> "$defconfig_file"
+        grep -q '^CONFIG_MODULES=y' "$defconfig_file" || echo 'CONFIG_MODULES=y' >> "$defconfig_file"
+        grep -q '^CONFIG_KALLSYMS=y' "$defconfig_file" || echo 'CONFIG_KALLSYMS=y' >> "$defconfig_file"
+        grep -q '^CONFIG_KALLSYMS_ALL=y' "$defconfig_file" || echo 'CONFIG_KALLSYMS_ALL=y' >> "$defconfig_file"
+        grep -q '^CONFIG_KPROBES=y' "$defconfig_file" || echo 'CONFIG_KPROBES=y' >> "$defconfig_file"
+        success "KPM enabled in defconfig"
     else
-        config --disable CONFIG_KPM
+        # KPM disabled, clear config
+        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+        sed -i '/CONFIG_KPM=/d' "$defconfig_file"
     fi
 
     # BBR 相关处理已完全移除，依赖内核原生支持
