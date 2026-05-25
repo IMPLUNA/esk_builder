@@ -122,7 +122,7 @@ install_ksu() {
     local repo="$1"
     local ref="$2"
     info "Install ReSukiSU: $repo@$ref"
-    
+
     # Run ReSukiSU setup.sh - it will auto-integrate KPM if CONFIG_KPM is in defconfig
     if ! curl -fsSL "https://raw.githubusercontent.com/$repo/$ref/kernel/setup.sh" | bash -s "$ref"; then
         error "ReSukiSU setup.sh failed"
