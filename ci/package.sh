@@ -24,15 +24,17 @@ package_anykernel() {
     pushd "$AK3" > /dev/null
     cp -p "$KERNEL_OUT/arch/arm64/boot/Image" .
 
-    info "Generating image checksum..."
-    sha256sum Image > Image.sha256
+    info "Compressing kernel image using zstd..."
+    zstd -19 -T0 --no-progress -o Image.zst Image > /dev/null 2>&1
+    rm -f ./Image
+    sha256sum Image.zst > Image.zst.sha256
 
     info "Cleaning up AK3..."
     find . -type f -name 'placeholder' -delete
     find . -mindepth 1 -depth -type d -empty -delete
 
     rm -f "$package_path"
-    zip -r9q -T -X -y "$package_path" . -x '.git/*' '*.log' '.github/*' 'README.md'
+    zip -r9q -T -X -y -n .zst "$package_path" . -x '.git/*' '*.log' '.github/*' 'README.md'
 
     popd > /dev/null
     success "AnyKernel3 packaged"

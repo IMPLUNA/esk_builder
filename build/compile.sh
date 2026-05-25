@@ -94,6 +94,7 @@ build_kernel() {
     fi
 
     # KPM: verify KPM config landed in .config, patch if missing
+    # Note: GKI 2.0 kernels only require CONFIG_KPM=y and CONFIG_MODULES=y
     if is_true "$KPM"; then
         local config_changed=false
 
@@ -106,23 +107,6 @@ build_kernel() {
         # KPM core config
         if ! grep -q '^CONFIG_KPM=y' "$KERNEL_OUT/.config"; then
             echo 'CONFIG_KPM=y' >> "$KERNEL_OUT/.config"
-            config_changed=true
-        fi
-
-        # KALLSYMS is required for KPM to work properly
-        if ! grep -q '^CONFIG_KALLSYMS=y' "$KERNEL_OUT/.config"; then
-            echo 'CONFIG_KALLSYMS=y' >> "$KERNEL_OUT/.config"
-            config_changed=true
-        fi
-
-        if ! grep -q '^CONFIG_KALLSYMS_ALL=y' "$KERNEL_OUT/.config"; then
-            echo 'CONFIG_KALLSYMS_ALL=y' >> "$KERNEL_OUT/.config"
-            config_changed=true
-        fi
-
-        # KPM may also need CONFIG_KPROBES support
-        if ! grep -q '^CONFIG_KPROBES=y' "$KERNEL_OUT/.config"; then
-            echo 'CONFIG_KPROBES=y' >> "$KERNEL_OUT/.config"
             config_changed=true
         fi
 

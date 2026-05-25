@@ -296,17 +296,11 @@ prepare_build() {
         if ! is_true "$KSU"; then
             error "KPM requires KSU=true"
         fi
-        info "Enable KPM (Kernel Patch Module)"
-        local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
-        # Add KPM and dependencies to defconfig
-        grep -q '^CONFIG_KPM=y' "$defconfig_file" || echo 'CONFIG_KPM=y' >> "$defconfig_file"
-        grep -q '^CONFIG_MODULES=y' "$defconfig_file" || echo 'CONFIG_MODULES=y' >> "$defconfig_file"
-        grep -q '^CONFIG_KALLSYMS=y' "$defconfig_file" || echo 'CONFIG_KALLSYMS=y' >> "$defconfig_file"
-        grep -q '^CONFIG_KALLSYMS_ALL=y' "$defconfig_file" || echo 'CONFIG_KALLSYMS_ALL=y' >> "$defconfig_file"
-        grep -q '^CONFIG_KPROBES=y' "$defconfig_file" || echo 'CONFIG_KPROBES=y' >> "$defconfig_file"
-        success "KPM enabled in defconfig"
+        info "Apply KPM kernel patch"
+        patch -p1 --fuzz=3 --no-backup-if-mismatch < "$KERNEL_PATCHES/kpm_5.10_compat.patch"
+        success "KPM patch applied"
     else
-        # KPM disabled, clear config
+        # KPM disabled, clear config from defconfig
         local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
         sed -i '/CONFIG_KPM=/d' "$defconfig_file"
     fi
