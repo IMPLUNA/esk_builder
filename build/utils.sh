@@ -132,20 +132,24 @@ install_ksu() {
 }
 
 clang_lto() {
-    config --enable CONFIG_LTO_CLANG
-    case "$1" in
+    local lto_mode="$1"
+    local defconfig_file="$KERNEL/arch/arm64/configs/$KERNEL_DEFCONFIG"
+
+    # Add LTO config to defconfig during setup phase
+    sed -i '/^CONFIG_LTO_CLANG=/d; /^CONFIG_LTO_CLANG_THIN=/d; /^CONFIG_LTO_CLANG_FULL=/d' "$defconfig_file"
+
+    echo 'CONFIG_LTO_CLANG=y' >> "$defconfig_file"
+
+    case "$lto_mode" in
         thin)
-            config --enable CONFIG_LTO_CLANG_THIN
-            config --disable CONFIG_LTO_CLANG_FULL
+            echo 'CONFIG_LTO_CLANG_THIN=y' >> "$defconfig_file"
             ;;
         full)
-            config --enable CONFIG_LTO_CLANG_FULL
-            config --disable CONFIG_LTO_CLANG_THIN
+            echo 'CONFIG_LTO_CLANG_FULL=y' >> "$defconfig_file"
             ;;
         *)
-            warn "Unknown LTO mode, using thin"
-            config --enable CONFIG_LTO_CLANG_THIN
-            config --disable CONFIG_LTO_CLANG_FULL
+            warn "Unknown LTO mode '$lto_mode', using thin"
+            echo 'CONFIG_LTO_CLANG_THIN=y' >> "$defconfig_file"
             ;;
     esac
 }

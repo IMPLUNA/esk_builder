@@ -66,6 +66,33 @@ build_kernel() {
         fi
     fi
 
+    # Clang LTO: verify LTO configs landed in .config, patch if missing
+    if [[ -n "$CLANG_LTO" ]]; then
+        local lto_mode="$CLANG_LTO"
+        local config_changed=false
+        if ! grep -q '^CONFIG_LTO_CLANG=y' "$KERNEL_OUT/.config"; then
+            echo 'CONFIG_LTO_CLANG=y' >> "$KERNEL_OUT/.config"
+            config_changed=true
+        fi
+        sed -i '/^CONFIG_LTO_CLANG_THIN=/d; /^CONFIG_LTO_CLANG_FULL=/d' "$KERNEL_OUT/.config"
+        case "$lto_mode" in
+            thin)
+                echo 'CONFIG_LTO_CLANG_THIN=y' >> "$KERNEL_OUT/.config"
+                ;;
+            full)
+                echo 'CONFIG_LTO_CLANG_FULL=y' >> "$KERNEL_OUT/.config"
+                ;;
+            *)
+                warn "Unknown LTO mode '$lto_mode', using thin"
+                echo 'CONFIG_LTO_CLANG_THIN=y' >> "$KERNEL_OUT/.config"
+                ;;
+        esac
+        if $config_changed || grep -q '^CONFIG_LTO_CLANG_THIN=y\|^CONFIG_LTO_CLANG_FULL=y' "$KERNEL_OUT/.config"; then
+            make "${MAKE_ARGS[@]}" olddefconfig
+            info "LTO ($lto_mode) configs patched in .config"
+        fi
+    fi
+
     # KPM: verify KPM config landed in .config, patch if missing
     if is_true "$KPM"; then
         local config_changed=false
